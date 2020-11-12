@@ -11,20 +11,20 @@ import torch.optim as optim
 # MODEL_CONSTANT
 WORD_FEATURE_NUMBER = 128
 CHAR_FEATURE_NUMBER = 32
-CNN_WINDOW_K = 3
+CNN_KERNEL = 3
 CNN_FILTERS_L = 32
-LSTM_FEATURE_NUMBER = 64
+LSTM_HIDDEN_SIZE = 64
 LSTM_LAYER_NUMBER = 1
-LSTM_DROPOUT = 0.00001
+LSTM_DROPOUT = 0
 EPOCHES = 3
-LEARNING_RATE = 0.0012
+LEARNING_RATE = 0.0015
 
 # PROGRAM_CONSTANT
 MIN_TIMEUP = 9
-SEC_TIMEUP = 50
+SEC_TIMEUP = 55
 
 # global variable
-device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:1" if torch.cuda.device_count()>1 else "cuda:0")
 torch.manual_seed(7919)
 
 def train_model(train_file, model_file):
@@ -114,17 +114,17 @@ class CNNBiLSTMModel(nn.Module):
         self.word_embeddings = nn.Embedding(self.num_words + 1, WORD_FEATURE_NUMBER, padding_idx=self.num_words).to(device)
         self.char_embeddings = nn.Embedding(self.num_chars + 1, CHAR_FEATURE_NUMBER, padding_idx=self.num_chars).to(device)
 
-        self.conv1d = nn.Conv1d(in_channels=CHAR_FEATURE_NUMBER, out_channels=CNN_FILTERS_L,kernel_size=CNN_WINDOW_K, stride=1, padding=(CNN_WINDOW_K-1)//2, bias=True).to(device)
+        self.conv1d = nn.Conv1d(in_channels=CHAR_FEATURE_NUMBER, out_channels=CNN_FILTERS_L,kernel_size=CNN_KERNEL, stride=1, padding=(CNN_KERNEL-1)//2, bias=True).to(device)
   
         self.lstm = nn.LSTM(
             input_size=WORD_FEATURE_NUMBER+CNN_FILTERS_L,
-            hidden_size=LSTM_FEATURE_NUMBER,
+            hidden_size=LSTM_HIDDEN_SIZE,
             num_layers=LSTM_LAYER_NUMBER,
             dropout=LSTM_DROPOUT,
             bidirectional=True
         ).to(device)
 
-        self.linear = nn.Linear(LSTM_FEATURE_NUMBER * 2, len(tag_index_map)).to(device)
+        self.linear = nn.Linear(LSTM_HIDDEN_SIZE * 2, len(tag_index_map)).to(device)
         
         self.pool = nn.AdaptiveMaxPool1d(1).to(device)
 

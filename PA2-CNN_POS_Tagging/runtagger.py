@@ -7,7 +7,7 @@ import torch
 from buildtagger import CNNBiLSTMModel
 from collections import defaultdict
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:1" if torch.cuda.device_count()>1 else "cuda:0")
 
 def tag_sentence(test_file, model_file, out_file):
     # write your code here. You can add functions as well.
