@@ -16,15 +16,15 @@ CNN_WINDOW_K = 3
 CNN_FILTERS_L = 32
 LSTM_FEATURES = 64
 LSTM_LAYERS = 1
-LSTM_DROPOUT = 0
+LSTM_DROPOUT = 0.00001
 
 TIME_LIMIT_MIN = 9
 TIME_LIMIT_SEC = 40
 EPOCH = 3
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.0012
 
 init_time = datetime.datetime.now()
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 torch.set_printoptions(threshold=5000)
 torch.manual_seed(3940242394)
 
@@ -55,7 +55,7 @@ def train_model(train_file, model_file):
                         char_index_map[char] = len(char_index_map)
             words.append(line_words)
             tags.append(line_tags)
-
+    
     for i in range(len(tags)):
         tags[i] = [tag_index_map[tag] for tag in tags[i]]
 
@@ -93,8 +93,8 @@ def train_model(train_file, model_file):
         losses.append(loss)
         if timeup: break
     torch.save((word_index_map, char_index_map, tag_index_map, model.state_dict()), model_file)
-    
     print('Finished...')
+    print((datetime.datetime.now() - init_time).total_seconds())
 
 def get_word_n_tag(word):
     # return word.rsplit('/', 1)[0].lower(), word.rsplit('/', 1)[1]
