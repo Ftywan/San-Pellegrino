@@ -71,7 +71,6 @@ def train_model(train_file, model_file):
     model = CNNBiLSTMModel(word_index_map, char_index_map, tag_index_map)
     optimizer = optim.Adam(params=model.parameters(), lr=LEARNING_RATE)
 
-    timeup = False
     for epoch in range(EPOCH):
         for i in range(num_lines):
             # print("{}%".format(i/num_lines*100))
