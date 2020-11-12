@@ -86,6 +86,7 @@ def train_model(train_file, model_file):
 
             # check time
             if (i+1) % 100 == 0:
+                print(i/num_lines*100 + '%')
                 time_diff = datetime.datetime.now() - start_time 
                 
                 if time_diff > datetime.timedelta(minutes=TIME_LIMIT_MIN, seconds=TIME_LIMIT_SEC):
