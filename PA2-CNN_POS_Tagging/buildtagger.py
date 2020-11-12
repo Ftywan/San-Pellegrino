@@ -12,14 +12,15 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 # MODEL_CONSTANT
-WORD_VEC_DIM = 128
+# WORD_VEC_DIM = 128
+WORD_VEC_DIM = 96
 CHAR_VEC_DIM = 32
 CNN_WINDOW_K = 3
 CNN_FILTERS_L = 32
 LSTM_FEATURES = 64
 LSTM_LAYERS = 2
 LSTM_DROPOUT = 0.00001
-EPOCH = 3
+EPOCHES = 3
 LEARNING_RATE = 0.0012
 
 # PROGRAM_CONSTANT
@@ -71,7 +72,7 @@ def train_model(train_file, model_file):
     model = CNNBiLSTMModel(word_index_map, char_index_map, tag_index_map)
     optimizer = optim.Adam(params=model.parameters(), lr=LEARNING_RATE)
 
-    for epoch in range(EPOCH):
+    for epoch in range(EPOCHES):
         for i in range(num_lines):
             # print("{}%".format(i/num_lines*100))
             sent_words = words[i]
@@ -106,17 +107,19 @@ def get_word_n_tag(word):
 
 class CNNBiLSTMModel(nn.Module):
 
-    def __init__(self, word_vocab, char_vocab, tag_index_map):
+    def __init__(self, word_index_map, char_index_map, tag_index_map):
         super(CNNBiLSTMModel, self).__init__()
 
-        self.word_vocab = word_vocab
-        self.char_vocab = char_vocab
-        self.word_vocab_length = len(word_vocab)
-        self.char_vocab_length = len(char_vocab)
-        self.word_embeddings = nn.Embedding(self.word_vocab_length + 1, WORD_VEC_DIM, padding_idx=len(self.word_vocab)).to(device)
-        self.char_embeddings = nn.Embedding(self.char_vocab_length + 1, CHAR_VEC_DIM, padding_idx=len(self.char_vocab)).to(device)
+        self.word_index_map = word_index_map
+        self.char_index_map = char_index_map
+        self.num_words = len(word_index_map)
+        self.num_chars = len(char_index_map)
+
+        self.word_embeddings = nn.Embedding(self.num_words + 1, WORD_VEC_DIM, padding_idx=self.num_words).to(device)
+        self.char_embeddings = nn.Embedding(self.num_chars + 1, CHAR_VEC_DIM, padding_idx=self.num_chars).to(device)
 
         self.conv1d = nn.Conv1d(in_channels=CHAR_VEC_DIM, out_channels=CNN_FILTERS_L,kernel_size=CNN_WINDOW_K, stride=1, padding=(CNN_WINDOW_K-1)//2, bias=True).to(device)
+  
         self.pool = nn.AdaptiveMaxPool1d(1).to(device)
 
         self.lstm = nn.LSTM(
@@ -134,14 +137,14 @@ class CNNBiLSTMModel(nn.Module):
     def forward(self, word_sentence):
 
         word_input = torch.LongTensor(
-            [self.word_vocab_length if word not in self.word_vocab else self.word_vocab[word] for word in word_sentence]).to(device)
+            [self.num_words if word not in self.word_index_map else self.word_index_map[word] for word in word_sentence]).to(device)
         word_embeds = self.word_embeddings(word_input).unsqueeze(1).to(device)
 
-        char_input = [torch.LongTensor([len(self.char_vocab) if char not in self.char_vocab else self.char_vocab[char]
+        char_input = [torch.LongTensor([self.num_chars if char not in self.char_index_map else self.char_index_map[char]
                                         for char in word]).to(device) for word in word_sentence]
 
         char_input = nn.utils.rnn.pad_sequence(
-            char_input, batch_first=True, padding_value=self.char_vocab_length)
+            char_input, batch_first=True, padding_value=self.num_chars)
 
         char_embeds = self.char_embeddings(char_input).transpose(1, 2).to(device)
 
