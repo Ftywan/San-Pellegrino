@@ -1,1 +1,1 @@
-python3 buildtagger.py sents.train model
+python3 -m torch.utils.bottleneck buildtagger.py sents.train model
