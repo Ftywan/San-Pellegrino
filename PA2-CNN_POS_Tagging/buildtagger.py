@@ -23,8 +23,8 @@ EPOCH = 3
 LEARNING_RATE = 0.0012
 
 # PROGRAM_CONSTANT
-TIME_LIMIT_MIN = 9
-TIME_LIMIT_SEC = 50
+MIN_TIMEUP = 9
+SEC_TIMEUP = 50
 
 # global variable
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -88,20 +88,21 @@ def train_model(train_file, model_file):
             if (i+1) % 100 == 0:
                 print(str(i/num_lines*100) + '%')
                 time_diff = datetime.datetime.now() - start_time 
-                
-                if time_diff > datetime.timedelta(minutes=TIME_LIMIT_MIN, seconds=TIME_LIMIT_SEC):
-                    timeup = True
-                    break
-
+                if time_diff > datetime.timedelta(minutes=MIN_TIMEUP, seconds=SEC_TIMEUP):
+                    terminate(word_index_map, char_index_map, tag_index_map, model.state_dict(), model_file)
+                    return
         # losses.append(loss)
-        if timeup: break
-    torch.save((word_index_map, char_index_map, tag_index_map, model.state_dict()), model_file)
+    terminate(word_index_map, char_index_map, tag_index_map, model.state_dict(), model_file)
+
+
+def terminate(word_index_map, char_index_map, tag_index_map, state_dict, model_file):
+    torch.save((word_index_map, char_index_map, tag_index_map, state_dict), model_file)
     print('seconds lapsed: {}'.format((datetime.datetime.now() - start_time).total_seconds()))
+
 
 def get_word_n_tag(word):
     # return word.rsplit('/', 1)[0].lower(), word.rsplit('/', 1)[1]
     return word.rsplit('/', 1)[0], word.rsplit('/', 1)[1]
-
 
 
 class CNNBiLSTMModel(nn.Module):
@@ -129,6 +130,7 @@ class CNNBiLSTMModel(nn.Module):
 
         self.hidden2tag = nn.Linear(
             LSTM_FEATURES * 2, len(tag_index_map)).to(device)
+
 
     def forward(self, word_sentence):
 
