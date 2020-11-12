@@ -2,22 +2,19 @@
 import datetime
 start_time = datetime.datetime.now()
 
-import os
-import math
 import sys
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
 # MODEL_CONSTANT
-WORD_VEC_DIM = 128
-CHAR_VEC_DIM = 32
+WORD_FEATURE_NUMBER = 128
+CHAR_FEATURE_NUMBER = 32
 CNN_WINDOW_K = 3
 CNN_FILTERS_L = 32
-LSTM_FEATURES = 64
-LSTM_LAYERS = 2
+LSTM_FEATURE_NUMBER = 64
+LSTM_LAYER_NUMBER = 1
 LSTM_DROPOUT = 0.00001
 EPOCHES = 3
 LEARNING_RATE = 0.0012
@@ -28,7 +25,7 @@ SEC_TIMEUP = 50
 
 # global variable
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-torch.manual_seed(3940242394)
+torch.manual_seed(7919)
 
 def train_model(train_file, model_file):
 
@@ -114,20 +111,20 @@ class CNNBiLSTMModel(nn.Module):
         self.num_words = len(word_index_map)
         self.num_chars = len(char_index_map)
 
-        self.word_embeddings = nn.Embedding(self.num_words + 1, WORD_VEC_DIM, padding_idx=self.num_words).to(device)
-        self.char_embeddings = nn.Embedding(self.num_chars + 1, CHAR_VEC_DIM, padding_idx=self.num_chars).to(device)
+        self.word_embeddings = nn.Embedding(self.num_words + 1, WORD_FEATURE_NUMBER, padding_idx=self.num_words).to(device)
+        self.char_embeddings = nn.Embedding(self.num_chars + 1, CHAR_FEATURE_NUMBER, padding_idx=self.num_chars).to(device)
 
-        self.conv1d = nn.Conv1d(in_channels=CHAR_VEC_DIM, out_channels=CNN_FILTERS_L,kernel_size=CNN_WINDOW_K, stride=1, padding=(CNN_WINDOW_K-1)//2, bias=True).to(device)
+        self.conv1d = nn.Conv1d(in_channels=CHAR_FEATURE_NUMBER, out_channels=CNN_FILTERS_L,kernel_size=CNN_WINDOW_K, stride=1, padding=(CNN_WINDOW_K-1)//2, bias=True).to(device)
   
         self.lstm = nn.LSTM(
-            input_size=WORD_VEC_DIM+CNN_FILTERS_L,
-            hidden_size=LSTM_FEATURES,
-            num_layers=LSTM_LAYERS,
+            input_size=WORD_FEATURE_NUMBER+CNN_FILTERS_L,
+            hidden_size=LSTM_FEATURE_NUMBER,
+            num_layers=LSTM_LAYER_NUMBER,
             dropout=LSTM_DROPOUT,
             bidirectional=True
         ).to(device)
 
-        self.linear = nn.Linear(LSTM_FEATURES * 2, len(tag_index_map)).to(device)
+        self.linear = nn.Linear(LSTM_FEATURE_NUMBER * 2, len(tag_index_map)).to(device)
         
         self.pool = nn.AdaptiveMaxPool1d(1).to(device)
 
