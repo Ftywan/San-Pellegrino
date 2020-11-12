@@ -66,16 +66,15 @@ def train_model(train_file, model_file):
     num_lines = len(words)
 
     # train the model
-    losses = []
+    # losses = []
     loss_function = nn.CrossEntropyLoss()
     model = CNNBiLSTMModel(word_index_map, char_index_map, tag_index_map)
     optimizer = optim.Adam(params=model.parameters(), lr=LEARNING_RATE)
 
     timeup = False
     for epoch in range(EPOCH):
-        loss = 0
         for i in range(num_lines):
-            print("{}%".format(i/num_lines*100))
+            # print("{}%".format(i/num_lines*100))
             sent_words = words[i]
             sent_tags = tags[i]
             model.zero_grad()
@@ -84,7 +83,6 @@ def train_model(train_file, model_file):
             loss = loss_function(output, torch.LongTensor(sent_tags).to(device)).to(device)
             loss.backward()
             optimizer.step()
-            loss += loss.item()
 
             # check time
             if (i+1) % 100 == 0:
@@ -94,11 +92,10 @@ def train_model(train_file, model_file):
                     timeup = True
                     break
 
-        losses.append(loss)
+        # losses.append(loss)
         if timeup: break
     torch.save((word_index_map, char_index_map, tag_index_map, model.state_dict()), model_file)
-    print('Finished...')
-    print((datetime.datetime.now() - start_time).total_seconds())
+    print('seconds lapsed: {}'.format((datetime.datetime.now() - start_time).total_seconds()))
 
 def get_word_n_tag(word):
     # return word.rsplit('/', 1)[0].lower(), word.rsplit('/', 1)[1]
