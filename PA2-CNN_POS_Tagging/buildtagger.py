@@ -24,7 +24,7 @@ MIN_TIMEUP = 9
 SEC_TIMEUP = 50
 
 # global variable
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 torch.manual_seed(7919)
 
 def train_model(train_file, model_file):
