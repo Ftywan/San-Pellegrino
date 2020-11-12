@@ -1,15 +1,17 @@
 # python3.5 buildtagger.py <train_file_absolute_path> <model_file_absolute_path>
+import datetime
+start_time = datetime.datetime.now()
 
 import os
 import math
 import sys
-import datetime
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
+# MODEL_CONSTANT
 WORD_VEC_DIM = 128
 CHAR_VEC_DIM = 32
 CNN_WINDOW_K = 3
@@ -17,18 +19,16 @@ CNN_FILTERS_L = 32
 LSTM_FEATURES = 64
 LSTM_LAYERS = 1
 LSTM_DROPOUT = 0.00001
-
-TIME_LIMIT_MIN = 9
-TIME_LIMIT_SEC = 40
 EPOCH = 3
 LEARNING_RATE = 0.0012
 
-init_time = datetime.datetime.now()
+# PROGRAM_CONSTANT
+TIME_LIMIT_MIN = 9
+TIME_LIMIT_SEC = 50
+
+# global variable
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-torch.set_printoptions(threshold=5000)
 torch.manual_seed(3940242394)
-
-
 
 def train_model(train_file, model_file):
 
@@ -37,6 +37,7 @@ def train_model(train_file, model_file):
     word_index_map = {}
     tag_index_map = {}
     char_index_map = {}
+
     with open(train_file) as data:
         for line in data:
             line_words, line_tags = [], []
@@ -46,6 +47,8 @@ def train_model(train_file, model_file):
                 word, tag = get_word_n_tag(wordntag)
                 line_words.append(word)
                 line_tags.append(tag)
+
+                # to_inx
                 if word not in word_index_map:
                     word_index_map[word] = len(word_index_map)
                 if tag not in tag_index_map:
@@ -53,15 +56,16 @@ def train_model(train_file, model_file):
                 for char in word:
                     if char not in char_index_map:
                         char_index_map[char] = len(char_index_map)
+
             words.append(line_words)
             tags.append(line_tags)
     
     for i in range(len(tags)):
-        tags[i] = [tag_index_map[tag] for tag in tags[i]]
+        tags[i] = [tag_index_map[tag] for tag in tags[i]] # convert all tag to index in tags
 
     num_lines = len(words)
 
-    # training
+    # train the model
     losses = []
     loss_function = nn.CrossEntropyLoss()
     model = CNNBiLSTMModel(word_index_map, char_index_map, tag_index_map)
@@ -84,7 +88,7 @@ def train_model(train_file, model_file):
 
             # check time
             if (i+1) % 100 == 0:
-                time_diff = datetime.datetime.now() - init_time 
+                time_diff = datetime.datetime.now() - start_time 
                 
                 if time_diff > datetime.timedelta(minutes=TIME_LIMIT_MIN, seconds=TIME_LIMIT_SEC):
                     timeup = True
@@ -94,7 +98,7 @@ def train_model(train_file, model_file):
         if timeup: break
     torch.save((word_index_map, char_index_map, tag_index_map, model.state_dict()), model_file)
     print('Finished...')
-    print((datetime.datetime.now() - init_time).total_seconds())
+    print((datetime.datetime.now() - start_time).total_seconds())
 
 def get_word_n_tag(word):
     # return word.rsplit('/', 1)[0].lower(), word.rsplit('/', 1)[1]
