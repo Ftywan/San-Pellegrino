@@ -61,7 +61,7 @@ def train_model(train_file, model_file):
 
     for epoch in range(EPOCH):
         loss = 0
-        
+
 
 
 
