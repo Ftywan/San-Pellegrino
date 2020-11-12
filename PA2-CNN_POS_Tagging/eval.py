@@ -6,14 +6,14 @@ import sys
 
 
 if __name__ == "__main__":
-    # out_file = sys.argv[1]
-    out_file = 'sents.out'
+    out_file = sys.argv[1]
+    # out_file = 'sents.out'
     reader = open(out_file)
     out_lines = reader.readlines()
     reader.close()
 
-    # ref_file = sys.argv[2]
-    ref_file = 'sents.answer'
+    ref_file = sys.argv[2]
+    # ref_file = 'sents.answer'
     reader = open(ref_file)
     ref_lines = reader.readlines()
     reader.close()

@@ -3,6 +3,7 @@
 import os
 import math
 import sys
+import datetime
 
 import torch
 import torch.nn as nn
@@ -18,20 +19,24 @@ LSTM_LAYERS = 1
 LSTM_DROPOUT = 0
 
 TIME_LIMIT_MIN = 9
-TIME_LIMIT_SEC = 0
-EPOCH = 2
+TIME_LIMIT_SEC = 40
+EPOCH = 3
 LEARNING_RATE = 0.001
 
+init_time = datetime.datetime.now()
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+torch.set_printoptions(threshold=5000)
+torch.manual_seed(3940242394)
 
-word_index_map = {}
-tag_index_map = {}
-char_index_map = {}
+
 
 def train_model(train_file, model_file):
 
     # parse train file
     words, tags = [], []
+    word_index_map = {}
+    tag_index_map = {}
+    char_index_map = {}
     with open(train_file) as data:
         for line in data:
             line_words, line_tags = [], []
@@ -54,27 +59,52 @@ def train_model(train_file, model_file):
     for i in range(len(tags)):
         tags[i] = [tag_index_map[tag] for tag in tags[i]]
 
+    num_lines = len(words)
+
+    # training
     losses = []
     loss_function = nn.CrossEntropyLoss()
-    model = CNNBiLSTMModel(word_index_map, char_index_map)
+    model = CNNBiLSTMModel(word_index_map, char_index_map, tag_index_map)
     optimizer = optim.Adam(params=model.parameters(), lr=LEARNING_RATE)
 
+    timeup = False
     for epoch in range(EPOCH):
         loss = 0
+        for i in range(num_lines):
+            print("{}%".format(i/num_lines*100))
+            sent_words = words[i]
+            sent_tags = tags[i]
+            model.zero_grad()
 
+            output = model(sent_words).to(device)
+            loss = loss_function(output, torch.LongTensor(sent_tags).to(device)).to(device)
+            loss.backward()
+            optimizer.step()
+            loss += loss.item()
 
+            # check time
+            if (i+1) % 100 == 0:
+                time_diff = datetime.datetime.now() - init_time 
+                
+                if time_diff > datetime.timedelta(minutes=TIME_LIMIT_MIN, seconds=TIME_LIMIT_SEC):
+                    timeup = True
+                    break
 
-
-
-
-
+        losses.append(loss)
+        if timeup: break
+    torch.save((word_index_map, char_index_map, tag_index_map, model.state_dict()), model_file)
+    
+    print('Finished...')
 
 def get_word_n_tag(word):
-    return word.rsplit('/', 1)[0].lower(), word.rsplit('/', 1)[1]
+    # return word.rsplit('/', 1)[0].lower(), word.rsplit('/', 1)[1]
+    return word.rsplit('/', 1)[0], word.rsplit('/', 1)[1]
+
+
 
 class CNNBiLSTMModel(nn.Module):
 
-    def __init__(self, word_vocab, char_vocab):
+    def __init__(self, word_vocab, char_vocab, tag_index_map):
         super(CNNBiLSTMModel, self).__init__()
 
         self.word_vocab = word_vocab
